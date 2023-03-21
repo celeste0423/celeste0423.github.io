@@ -1,11 +1,10 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:diary_pencake_clone/page/note_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../repository/notes_repository.dart';
-
 
 class App extends StatefulWidget {
   @override
@@ -40,10 +39,8 @@ class _AppState extends State<App> {
     });
   }
 
-
-
   @override
-  PreferredSizeWidget _appBarWidget(){
+  PreferredSizeWidget _appBarWidget() {
     return PreferredSize(
       preferredSize: Size(Get.width, Get.height * 0.3),
       child: SafeArea(
@@ -52,25 +49,28 @@ class _AppState extends State<App> {
           flexibleSpace: Center(
             child: Column(
               children: [
-                SizedBox(height: Get.height * 0.05,),
+                SizedBox(
+                  height: Get.height * 0.05,
+                ),
                 TextFormField(
                   controller: titleController,
                   focusNode: _titleFocusNode,
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    hintText: _isTitleFocused ? '' : '제목을 입력하세요',
-                    hintStyle: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                      )
-                    ),
+                      border: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      hintText: _isTitleFocused ? '' : '제목을 입력하세요',
+                      hintStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                      )),
                 ),
-                const SizedBox(height: 10,),
+                const SizedBox(
+                  height: 10,
+                ),
                 TextFormField(
                   controller: subtitleController,
                   focusNode: _subtitleFocusNode,
@@ -85,7 +85,7 @@ class _AppState extends State<App> {
                   ),
                 ),
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(20,20,20,0),
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Divider(
                     height: 0.5,
                     color: Colors.black12,
@@ -99,7 +99,7 @@ class _AppState extends State<App> {
     );
   }
 
-  Widget _bodyWidget(){
+  Widget _bodyWidget() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -119,39 +119,38 @@ class _AppState extends State<App> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: (){
-                    final noteTitle = noteTitleController.text;
-                    final content = contentController.text;
-                    final createdAt = DateTime.now().subtract(Duration(days: 15));
-                    //create기능을 담당하는 method추가
-                    createNote(
-                      noteTitle: noteTitle,
-                      content: content,
-                      createdAt: createdAt,
-                    );
-                  },
-                  child: const Text(
-                    '저장 버튼'
-                  )
-                ),
+                padding: const EdgeInsets.all(20.0),
+                child: GestureDetector(
+                    onTap: () {
+                      final noteTitle = noteTitleController.text;
+                      final content = contentController.text;
+                      final createdAt = DateTime.now();
+                      //create기능을 담당하는 method추가
+                      createNote(
+                        noteTitle: noteTitle,
+                        content: content,
+                        createdAt: createdAt,
+                      );
+                    },
+                    child: const Text('저장 버튼')),
               ),
             ],
           ),
-          SizedBox(
-            height: Get.height * 0.3,
+          Expanded(
             child: StreamBuilder<List<Note>>(
               stream: readNotes(),
-              builder: (context, snapshot){
-                if(snapshot.hasError) {
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
                   return const Text('에러');
-                }else if (snapshot.hasData){
+                } else if (snapshot.hasData) {
                   final notes = snapshot.data!;
-                  return ListView(
-                    children: notes.map(buildNote).toList()
+                  return ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return buildNote(notes[index], index);
+                    },
                   );
-                }else{
+                } else {
                   return const Center(child: CircularProgressIndicator());
                 }
               },
@@ -162,33 +161,39 @@ class _AppState extends State<App> {
     );
   }
 
-  Widget buildNote(Note note) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          '${note.noteTitle}',
-          style: const TextStyle(
-            fontSize: 15,
+  Widget buildNote(Note note, int index) => GestureDetector(
+        onTap: () {
+          Get.to(() => NotePage(), arguments: index);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                note.noteTitle!,
+                style: const TextStyle(
+                  fontSize: 15,
+                ),
+              ),
+              Text(
+                timeago.format(note.createdAt!),
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black38,
+                ),
+              ),
+            ],
           ),
         ),
-        Text(
-          timeago.format(note.createdAt!),
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.black38,
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 
   Future createNote({
     String? noteTitle,
     String? content,
     DateTime? createdAt,
-  }) async{ //name을 입력받아서 들고옴
+  }) async {
+    //name을 입력받아서 들고옴
     //collection의 위치 설정
     //뒤에 .doc('{너의 아이디}')를 붙일 경우 특정 collection내의 특정 document를 지정하는 것
     final docNote = FirebaseFirestore.instance.collection('notes').doc();
@@ -201,33 +206,29 @@ class _AppState extends State<App> {
     );
     final json = note.toJson();
 
-    print(createdAt.toString());
-
     await docNote.set(json); //docUser 위치에 json 내용을 set함
   }
 
   Stream<List<Note>> readNotes() {
     return FirebaseFirestore.instance
         .collection('notes')
+        .orderBy("created_at", descending: true)
         .snapshots()
         .map((snapshot) =>
-          snapshot.docs.map((doc) => Note.fromJson(doc.data())).toList());
+            snapshot.docs.map((doc) => Note.fromJson(doc.data())).toList());
     //snapshot은 documents의 한 장면을 의미함
   }
 
-
   @override
   Widget build(BuildContext context) {
-
     return GestureDetector(
-      onTap: () {
+        onTap: () {
           Get.focusScope!.unfocus();
         },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _appBarWidget(),
-        body: _bodyWidget(),
-        )
-    );
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: _appBarWidget(),
+          body: _bodyWidget(),
+        ));
   }
 }
